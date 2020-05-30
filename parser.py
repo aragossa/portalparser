@@ -1,8 +1,10 @@
 from bs4 import BeautifulSoup as Soup
 from selenium import webdriver
+from selenium.common.exceptions import TimeoutException
+
 from prof_pars import prof_pars
 import json
-import  time
+import time
 import datetime
 import random
 import traceback
@@ -103,21 +105,23 @@ def main_func(driver, config):
         time.sleep(300)
 
 
-if __name__ == '__main__':
-    while True:
-        try:
-            print ('starting')
 
-            select = random.randint(0, 1)
-            print (select)
-            config = main_cfg[select]
-            print (config)
-            chrome_options = webdriver.ChromeOptions()
-            chrome_options.add_argument('--proxy-server=http://%s' % config.get('ip'))
-            #chrome_options.add_argument('--headless')
-            #chrome_options.add_argument('--no-sandbox') # required when running as root user. otherwise you would get no sandbox errors.
-            driver = webdriver.Chrome(chrome_options=chrome_options)#,
-              #service_args=['--verbose', '--log-path=/tmp/chromedriver.log'])
+def main ():
+    while True:
+
+        print ('starting')
+
+        select = random.randint(0, 1)
+        print (select)
+        config = main_cfg[select]
+        print (config)
+        chrome_options = webdriver.ChromeOptions()
+        chrome_options.add_argument('--proxy-server=http://%s' % config.get('ip'))
+        chrome_options.add_argument('--headless')
+        #chrome_options.add_argument('--no-sandbox') # required when running as root user. otherwise you would get no sandbox errors.
+        driver = webdriver.Chrome(chrome_options=chrome_options)#,
+        #service_args=['--verbose', '--log-path=/tmp/chromedriver.log'])
+        try:
             main_func(driver, config)
         except Exception as e:
             print (e)
@@ -127,3 +131,8 @@ if __name__ == '__main__':
                 logfile.write('---------\n{}\n{}'.format(datetime.datetime.now(), e))
             print ('sleeping')
             time.sleep(20)
+
+
+
+if __name__ == '__main__':
+    main()
