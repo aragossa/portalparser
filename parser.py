@@ -2,14 +2,12 @@ from bs4 import BeautifulSoup as Soup
 from selenium import webdriver
 from selenium.common.exceptions import TimeoutException
 
+from dbconnector import Dbconnetor
 from prof_pars import prof_pars
-import json
 import time
 import datetime
 import random
 import traceback
-#madrushspb
-
 
 fin_cfg = {'ip':'77.83.185.165:8000',
            'user':'aragesserf',
@@ -21,14 +19,7 @@ ger_cfg = {'ip':'77.83.185.165:8000',
 
 main_cfg = [fin_cfg, ger_cfg]
 
-def read_intervals():
-    with open('cfgs.json', 'r') as log_file:
-        read_products = log_file.readlines()
-    jsonObj = {}
-    for elem in read_products:
-        curr_obj = json.loads(elem)
-        jsonObj.update(curr_obj)
-    return jsonObj
+
 
 def login(driver, username, pwd):
     print ('login')
@@ -49,7 +40,6 @@ def pagination(driver, user):
         pages_urls = []
         check_url = ('https://www.oddsportal.com/profile/{}/my-predictions/next/page/'.format(user))
         for a_tag in pagination_div.find_all('a', href = True):
-            print (a_tag.attrs['href'])
             page_url = ('https://www.oddsportal.com{0}'.format(a_tag.attrs['href']))
             if (check_url in page_url) and (page_url not in pages_urls):
                 pages_urls.append(page_url)
@@ -58,13 +48,23 @@ def pagination(driver, user):
         return None
 
 
+def get_portal_users():
+    dbconnetor = Dbconnetor()
+    query_result = dbconnetor.execute_select_many_query("""
+            SELECT portal_user_name, source_type
+            FROM oddsportalparser.configs;
+            """)
+    portal_users = []
+    for row in query_result:
+        portal_users.append(str(row[0]))
+    return portal_users
 
 
 
 
 def main_func(driver, config):
 
-
+    dbconnetor = Dbconnetor()
     start = ("https://www.oddsportal.com/login")
     driver.get(start)
     login(driver, config.get('user'), config.get('pass'))
@@ -74,28 +74,27 @@ def main_func(driver, config):
 
     while True:
         start_time = time.time()
-        cfgs = read_intervals()
-        for user, params in cfgs.items():
+        portal_users = get_portal_users()
+        for user in portal_users:
             url = 'https://www.oddsportal.com/profile/{}/my-predictions/next/'.format(user)
             try:
                 driver.get(url)
             except TimeoutException:
                 with open('errors.log', 'a', encoding='utf-8') as logfile:
-                    logfile.write('---------\nTimeoutException\n{}\n{}\n{}\n{}\n'.format(datetime.datetime.now(), params, user, curr_url))
+                    logfile.write('---------\nTimeoutException\n{}\n{}\n{}\n'.format(datetime.datetime.now(), user, curr_url))
 
                 continue
             pages_urls = pagination(driver, user)
-            print (pages_urls)
-            prof_pars (driver, params, user, url)
+            prof_pars (driver, user, url)
             if pages_urls != None:
                 for curr_url in pages_urls:
                     driver.get(curr_url)
                     try:
-                        prof_pars (driver, params, user, curr_url)
+                        prof_pars (driver, user, curr_url)
                         time.sleep(3)
                     except Exception as e:
                         with open('errors.log', 'a', encoding='utf-8') as logfile:
-                            logfile.write('---------\n{}\n{}\n{}\n{}\n{}\n'.format(datetime.datetime.now(), params, user, curr_url, e))
+                            logfile.write('---------\n{}\n{}\n{}\n{}\n'.format(datetime.datetime.now(), user, curr_url, e))
                             logfile.write(traceback.format_exc())
                         time.sleep(3)
 
@@ -112,7 +111,6 @@ def main ():
         print ('starting')
 
         select = random.randint(0, 1)
-        print (select)
         config = main_cfg[select]
         print (config)
         chrome_options = webdriver.ChromeOptions()

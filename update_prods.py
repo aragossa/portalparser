@@ -26,7 +26,19 @@ def get_users ():
         """)
     bot_users = []
     for row in query_result:
-        bot_users.append(row[0])
+        bot_users.append(str(row[0]))
+    return bot_users
+
+def get_users_usernames (user_id):
+    dbconnector = Dbconnetor()
+    query_result = dbconnector.execute_select_many_query("""
+            SELECT portal_user_name
+            FROM oddsportalparser.configs
+            WHERE bot_user_id = '{}';
+        """.format(user_id))
+    bot_users = []
+    for row in query_result:
+        bot_users.append(str(row[0]))
     return bot_users
 
 
@@ -36,17 +48,6 @@ def get_state():
 def change_state():
     pass
 
-
-
-
-def read_intervals():
-    with open('cfgs.json', 'r') as log_file:
-        read_products = log_file.readlines()
-    jsonObj = {}
-    for elem in read_products:
-        curr_obj = json.loads(elem)
-        jsonObj.update(curr_obj)
-    return jsonObj
 
 def check_intevals (cfgs, uid):
 
@@ -66,20 +67,15 @@ def check_intevals (cfgs, uid):
 
 
 def update_prods (bot):
-    admins = []
-    with open('admins.cfg', 'r') as users_file:
-        for admin in users_file.readlines():
-            if admin != '\n' or admin != '':
-                admins.append (admin.rstrip())
-    with open('active_usr', 'r') as state:
-        bot_users = state.readlines()
+    bot_users = get_users()
 
-    with open('active_groups', 'r') as state:
-        bot_groups = state.readlines()
     for file in os.listdir ('integration'):
         time.sleep (1)
         matches = dict(read_json ('integration/{}'.format(file)))
         os.remove('integration/{}'.format(file))
+
+        #AEK Athens FC - Panathinaikos 1X2 {'user': 'thanosbellum', 'sport_type': 'Soccer', 'country': 'Greece', 'league': 'Super League', 'pick': 0}
+
 
         for key, val in matches.items():
             send_msg = ''
@@ -104,10 +100,9 @@ def update_prods (bot):
                 country = val.get('country')
                 league = val.get('league')
                 user = val.get('user')
-                cfgs = read_intervals()
-                params = cfgs.get(user)
+
                 user_stat_url = 'https://www.oddsportal.com/profile/{}/statistics/'.format(user)
-                send_msg = ("""\nby {0} (key words: {1})\n""".format(user, params))
+                send_msg = ("""\nby {0}\n""".format(user))
                 if len(val) == 10:
                     sport_type = val.get('sport_type')
                     country = val.get('country')
@@ -127,7 +122,7 @@ def update_prods (bot):
                     send_msg += ("""{0} ({2})
     {1}
     {4} ({3})
-    odds: {5} - {6})""".format(match_name, match_time, sport_type, country, league, odd_1, odd_2, match_url_o, user, params, match_url_b, user_stat_url))
+    odds: {5} - {6})""".format(match_name, match_time, sport_type, country, league, odd_1, odd_2, match_url_o, user, 'params', match_url_b, user_stat_url))
                 elif len(val) == 11:
                     match_time = val.get('match_time')
                     match_name = val.get('match_name')
@@ -146,60 +141,39 @@ def update_prods (bot):
                     send_msg += ("""{0} ({2})
     {1}
     {4} ({3})
-    odds: {5} - {6} - {7}""".format(match_name, match_time, sport_type, country, league, odd_1, odd_X, odd_2, match_url_o, user, params, match_url_b, user_stat_url))
+    odds: {5} - {6} - {7}""".format(match_name, match_time, sport_type, country, league, odd_1, odd_X, odd_2, match_url_o, user, 'params', match_url_b, user_stat_url))
                 elif len(val) == 7:
 
                     wc_winner = val.get('wc_winner')
                     odd_wc = val.get('odd_wc')
                     send_msg += ("""{0} ({1})
     {2}
-    odds: {3}""".format(league, sport_type, wc_winner, odd_wc, user,params))
+    odds: {3}""".format(league, sport_type, wc_winner, odd_wc, user,'params'))
 
 
-
-                #else:
-                #    send_msg = str(val)
 
                 if len(val) == 10:
                     send_msg += ("""\n{0}\n{1}\n""".format(match_url_b, match_url_o))
 
                 elif len(val) == 11:
                     send_msg += ("""\n{0}\n{1}\n""".format(match_url_b, match_url_o))
-
-                if user == 'madrush':
-
-                    for group in bot_groups:
-                        print ('group', group)
-                        try:
-                            bot.send_message (group, send_msg)
-                        except telebot.apihelper.ApiException as e:
-                            print (e)
-                        #with open ('group_errors', 'a') as group_error_file:
-                        #    group_error_file.write('\n')
-                        #    group_error_file.write (group)
-
-
                 print (send_msg)
-                #if len(val) == 10:
-                #    send_msg += ("""\nby {0} (key words: {1})\n""".format(user, params))
-
-                #elif len(val) == 11:
-                #    send_msg += ("""\nby {0} (key words: {1})\n""".format(user, params ))
-
-                #elif len(val) == 7:
-                #    send_msg += ("""\nby {0} (key words: {1})\n""".format(user, params))
 
                 if len(val) != 7:
                     send_msg += ("""{0}""".format(user_stat_url))
 
                 for bot_user in bot_users:
-                    try:
-                        bot.send_message (bot_user, send_msg)
-                    except telebot.apihelper.ApiException as e:
-                        with open ('user_errors', 'a') as user_error_file:
+                    user_portal_usernames = get_users_usernames(bot_user)
+                    if user in user_portal_usernames:
+                        print (f'{user} in users {bot_user} list')
+                        try:
+                            bot.send_message (bot_user, send_msg)
+                            time.sleep(1)
+                        except telebot.apihelper.ApiException:
+                            print ('failure')
+                    else:
+                        print (f'{user} NOT in users {bot_user} list')
 
-                            user_error_file.write (bot_user)
-                            user_error_file.write('\n')
 
                 with open('sent.txt', 'a') as send_f:
                     send_f.write(check_headers)
