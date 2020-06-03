@@ -5,13 +5,13 @@ import time
 import telebot
 
 from dbconnector import Dbconnetor
+from mainlogger import get_logger
 
+parser_logger = get_logger("update_prods")
 
 def read_json (filename):
     with open(filename, 'r') as log_file:
         read_products = log_file.readlines()
-    #with open(filename, 'w') as log_file:
-    #    log_file.write('')
     jsonObj = {}
     for elem in read_products:
         curr_obj = json.loads(elem)
@@ -89,7 +89,7 @@ def update_prods (bot):
             check_preds = [pred.replace('\n', '') for pred in sent_preds]
 
             if check_headers in check_preds:
-                print (check_headers, 'already send')
+                parser_logger.info ('{} already send'.format(check_headers))
                 continue
             elif headers == 'error':
                 pass
@@ -157,7 +157,7 @@ def update_prods (bot):
 
                 elif len(val) == 11:
                     send_msg += ("""\n{0}\n{1}\n""".format(match_url_b, match_url_o))
-                print (send_msg)
+                parser_logger.info (send_msg)
 
                 if len(val) != 7:
                     send_msg += ("""{0}""".format(user_stat_url))
@@ -165,14 +165,14 @@ def update_prods (bot):
                 for bot_user in bot_users:
                     user_portal_usernames = get_users_usernames(bot_user)
                     if user in user_portal_usernames:
-                        print (f'{user} in users {bot_user} list')
+                        parser_logger.info (f'{user} in users {bot_user} list')
                         try:
                             bot.send_message (bot_user, send_msg)
                             time.sleep(1)
                         except telebot.apihelper.ApiException:
-                            print ('failure')
+                            parser_logger.info ('failure')
                     else:
-                        print (f'{user} NOT in users {bot_user} list')
+                        parser_logger.info (f'{user} NOT in users {bot_user} list')
 
 
                 with open('sent.txt', 'a') as send_f:

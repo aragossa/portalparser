@@ -8,7 +8,9 @@ import threading
 import schedule
 import time
 from dbconnector import Dbconnetor
+from mainlogger import get_logger
 from update_prods import update_prods, get_users
+
 
 token = '1265626051:AAHe9U4w-JwbjroAjUyydqGLhmF3sEUVonU'
 # proxy = 'https://JLe3r1:UcW9VQ@196.18.3.112:8000'
@@ -18,6 +20,7 @@ states = {}
 states_user = {}
 
 bot = telebot.TeleBot(token)
+parser_logger = get_logger("bot")
 
 
 # https://t.me/Madbetbot?start=rus-tg-fpr
@@ -76,7 +79,7 @@ def start_handler(m):
     elif (states.get(m.from_user.id) == 'add_user'):
         dbconnector = Dbconnetor()
         input_data = m.text
-        print('adding user', input_data)
+        parser_logger.info('adding user {}'.format(input_data))
         dbconnector.execute_insert_query("""INSERT INTO oddsportalparser.configs
         (bot_user_id, portal_user_name, source_type)
         VALUES('{}', '{}', '');
@@ -188,14 +191,13 @@ def check_pending(bot):
 
 
 th = threading.Thread(target=check_pending, args=(bot,))
-print('start pending thread')
+parser_logger.info('start pending thread')
 th.start()
 
 while True:
     try:
-        print('Listernig...')
-        print(threading.current_thread())
+        parser_logger.info('Listernig...')
         bot.polling(none_stop=True)
     except Exception as e:
-        print(e)
+        parser_logger.exception(e)
         time.sleep(5)
