@@ -7,30 +7,29 @@ import uuid
 # madrushspb
 from selenium.common.exceptions import TimeoutException
 
-from mainlogger import get_logger
-
-parser_logger = get_logger("prof_parse")
 
 def write_results(match_parse_results):
+    print('start writing')
     filename = ('integration/{}.json'.format(uuid.uuid4()))
-    parser_logger.info('start writing {}'.format(filename))
+    print(filename)
     with open(filename, 'w') as fl:
         jsonObject = json.dumps(match_parse_results)
-        parser_logger.info('result {}'.format(str(jsonObject)))
+        print('# writing', jsonObject)
         fl.write(jsonObject)
         fl.write("\n")
-    parser_logger.info('ok')
+    print('ok')
 
 
 def write_results_to_db(match_parse_results):
+    print('start writing')
     filename = ('dbintegration/{}.json'.format(uuid.uuid4()))
-    parser_logger.info('start writing {}'.format(filename))
+    print(filename)
     with open(filename, 'w') as fl:
         jsonObject = json.dumps(match_parse_results)
-        parser_logger.info('result {}'.format(str(jsonObject)))
+        print('# writing', jsonObject)
         fl.write(jsonObject)
         fl.write("\n")
-    parser_logger.info('ok')
+    print('ok')
 
 
 def convert_datetime(data):
@@ -49,6 +48,8 @@ def convert_datetime(data):
     else:
         match_time = data[5:]
         match_date = data[:5]
+        # match_date = datetime.datetime.strptime(match_date, '%d/%m')
+        # match_date = match_date.strftime("%d/%m")
         return ('{0} - {1}'.format(match_date, match_time))
 
 

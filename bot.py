@@ -8,19 +8,16 @@ import threading
 import schedule
 import time
 from dbconnector import Dbconnetor
-from mainlogger import get_logger
 from update_prods import update_prods, get_users
-
 
 token = '1265626051:AAHe9U4w-JwbjroAjUyydqGLhmF3sEUVonU'
 # proxy = 'https://JLe3r1:UcW9VQ@196.18.3.112:8000'
 proxy = '77.83.185.165:8000'
-apihelper.proxy = {'https': proxy}
+#apihelper.proxy = {'https': proxy}
 states = {}
 states_user = {}
 
 bot = telebot.TeleBot(token)
-parser_logger = get_logger("bot")
 
 
 # https://t.me/Madbetbot?start=rus-tg-fpr
@@ -31,7 +28,14 @@ def start_handler(m):
     dbconnector = Dbconnetor()
     ref_key = m.text.replace('/start ', '')
     if ref_key == '/start':
-        bot.send_message(m.from_user.id, 'Не указан реферальный ключ')
+        check_user = dbconnector.execute_select_query("""SELECT status from oddsportalparser.ref_keys WHERE user_id = '{}'""".format(m.chat.id))
+        if check_user[0] == 'act':
+            btn1 = types.KeyboardButton('Manage portal users')
+            keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
+            keyboard.add(btn1)
+            bot.send_message(m.from_user.id, 'You are allready in', reply_markup=keyboard)
+        else:
+            bot.send_message(m.from_user.id, 'Wrong referal key')
     else:
         check = dbconnector.execute_select_query(
             """SELECT ref_id from oddsportalparser.ref_keys WHERE ref_id = '{}' AND status = 'new'""".format(ref_key))
@@ -79,7 +83,7 @@ def start_handler(m):
     elif (states.get(m.from_user.id) == 'add_user'):
         dbconnector = Dbconnetor()
         input_data = m.text
-        parser_logger.info('adding user {}'.format(input_data))
+        print('adding user', input_data)
         dbconnector.execute_insert_query("""INSERT INTO oddsportalparser.configs
         (bot_user_id, portal_user_name, source_type)
         VALUES('{}', '{}', '');
@@ -191,13 +195,14 @@ def check_pending(bot):
 
 
 th = threading.Thread(target=check_pending, args=(bot,))
-parser_logger.info('start pending thread')
+print('start pending thread')
 th.start()
 
 while True:
     try:
-        parser_logger.info('Listernig...')
+        print('Listernig...')
+        print(threading.current_thread())
         bot.polling(none_stop=True)
     except Exception as e:
-        parser_logger.exception(e)
+        print(e)
         time.sleep(5)
