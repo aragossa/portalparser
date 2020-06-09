@@ -2,8 +2,8 @@
 import uuid
 
 import telebot
-from telebot import types`
-from telebot import apihelper`
+from telebot import types
+from telebot import apihelper
 import threading
 import schedule
 import time
