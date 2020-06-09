@@ -117,7 +117,7 @@ def main ():
         chrome_options.add_argument('--proxy-server=http://%s' % config.get('ip'))
         chrome_options.add_argument('--headless')
         #chrome_options.add_argument('--no-sandbox') # required when running as root user. otherwise you would get no sandbox errors.
-        driver = webdriver.Chrome(chrome_options=chrome_options)#,
+        driver = webdriver.Chrome('chromedriver', chrome_options=chrome_options)#,
         service_args=['--verbose', '--log-path=/tmp/chromedriver.log']
         try:
             main_func(driver, config)
